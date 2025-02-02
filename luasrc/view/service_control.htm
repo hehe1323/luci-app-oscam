@@ -1,0 +1,21 @@
+<%+header%>
+<div class="cbi-value">
+    <label class="cbi-value-title"><%= translate("Service Status") %></label>
+    <div class="cbi-value-field">
+        <input type="button" class="cbi-button cbi-button-<%= status %>" 
+            onclick="handle_service(this, '<%= service %>')" 
+            value="<%= running and translate('Stop') or translate('Start') %>" />
+        <span id="service_status"><%= running and translate("Running") or translate("Stopped") %></span>
+    </div>
+</div>
+<script>
+    function handle_service(btn, service) {
+        var action = btn.value.toLowerCase();
+        XHR.get('<%= url("admin/services/oscam/control") %>/' + action, {
+            success: function() {
+                location.reload();
+            }
+        });
+    }
+</script>
+<%+footer%>
