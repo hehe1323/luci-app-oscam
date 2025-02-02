@@ -1,19 +1,17 @@
-m = Map("oscam", "OSCam Configuration")
+module("luci.controller.oscam", package.seeall)
 
-s = m:section(TypedSection, "oscam", "Settings")
-s.anonymous = true
-
-s:option(Flag, "enabled", "Enable OSCam").default = 0
-
-config_dir = s:option(Value, "config_dir", "Configuration Directory")
-config_dir.default = "/etc/oscam"
-config_dir.rmempty = false
-
-btn = s:option(Button, "_btn", "Control")
-btn.inputtitle = "Apply Configuration"
-btn.inputstyle = "apply"
-function btn.write()
-    os.execute("/etc/init.d/oscam restart")
+function index()
+    entry({"admin", "services", "oscam"}, firstchild(), _("OSCam"), 60).dependent = false
+    entry({"admin", "services", "oscam", "status"}, call("action_status"), _("Status"), 10)
+    entry({"admin", "services", "oscam", "config"}, cbi("oscam"), _("Configuration"), 20)
 end
 
-return m
+function action_status()
+    local sys = require "luci.sys"
+    local status = {
+        running = (sys.call("pgrep oscam >/dev/null") == 0),
+        pcsc_enabled = (luci.model.uci.cursor():get("oscam", "main", "pcsc") or "0") == "1"
+    }
+    luci.http.prepare_content("application/json")
+    luci.http.write_json(status)
+end
