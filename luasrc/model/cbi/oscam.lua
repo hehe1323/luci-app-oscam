@@ -1,15 +1,37 @@
-m = Map("oscam", "OSCam Configuration", "Configure OSCam service settings")
+local m, s, o
 
-s = m:section(TypedSection, "main", "Basic Settings")
+-- 绑定到UCI配置文件/etc/config/oscam
+m = Map("oscam", translate("OSCam Configuration"), translate("Configure OSCam settings."))
+
+-- 通用设置部分
+s = m:section(TypedSection, "main", translate("General Settings"))
 s.anonymous = true
 
-s:option(Flag, "enabled", "Enable OSCam", "Start OSCam service automatically")
-s:option(Flag, "pcsc", "Enable PC/SC", "Support PC/SC smart card readers")
+-- Web管理端口
+o = s:option(Value, "httpport", translate("Web Port"))
+o.datatype = "port"
+o.default = "8888"
 
-btn = s:option(Button, "_control", "Service Control")
-btn.template = "oscam/control"
+-- 用户名
+o = s:option(Value, "httpuser", translate("Username"))
+o.default = "oscam"
 
-btn = s:option(DummyValue, "_status", "Service Status")
-btn.template = "oscam/status"
+-- 密码
+o = s:option(Value, "httppwd", translate("Password"))
+o.password = true
+
+-- 动态生成打开后台的链接
+local ip = luci.http.getenv("SERVER_ADDR") or "192.168.1.1"
+local port = m:get(s.section, "httpport") or "8888"
+o = s:option(DummyValue, "_webui", translate("Open Web Interface"))
+o.rawhtml = true
+o.template = "oscam/webui_button"
+o.value = string.format("http://%s:%s", ip, port)
+
+-- 进程守护开关
+s = m:section(TypedSection, "service", translate("Service Control"))
+s.anonymous = true
+o = s:option(Button, "_control", translate("Service Status"))
+o.template = "oscam/service_control"
 
 return m
