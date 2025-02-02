@@ -17,6 +17,13 @@ define Package/luci-app-oscam
   PKGARCH:=all
 endef
 
+# 增加 postinst 脚本
+define Package/luci-app-oscam/postinst
+#!/bin/sh
+chmod 755 /usr/bin/oscam 2>/dev/null
+exit 0
+endef
+
 define Package/luci-app-oscam/description
   LuCI interface for OSCam (Open Source Conditional Access Module) management.
 endef
