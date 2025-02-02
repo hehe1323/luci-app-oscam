@@ -18,7 +18,7 @@ start_service() {
 }
 
 stop_service() {
-    killall -9 oscam
+    killall -9 oscam 2>/dev/null
 }
 
 reload_service() {
