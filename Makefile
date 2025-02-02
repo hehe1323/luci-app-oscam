@@ -66,4 +66,10 @@ define Package/luci-app-oscam/postinst
     exit 0
 endef
 
+define Package/luci-app-oscam/install
+    # 增加 Web 静态文件
+    $(INSTALL_DIR) $(1)/www/luci-static/resources
+    $(INSTALL_DATA) ./files/view/logs.htm $(1)/usr/lib/lua/luci/view/oscam/
+endef
+
 $(eval $(call BuildPackage,luci-app-oscam))
