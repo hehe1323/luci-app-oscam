@@ -1,17 +1,20 @@
 module("luci.controller.oscam", package.seeall)
 
 function index()
-    entry({"admin", "services", "oscam"}, firstchild(), _("OSCam"), 60).dependent = false
-    entry({"admin", "services", "oscam", "status"}, call("action_status"), _("Status"), 10)
-    entry({"admin", "services", "oscam", "config"}, cbi("oscam"), _("Configuration"), 20)
+    -- 注册菜单项
+    entry({"admin", "services", "oscam"}, cbi("oscam"), _("OSCam"), 60).dependent = true
+    -- 添加状态检查接口
+    entry({"admin", "services", "oscam", "status"}, call("check_status")).leaf = true
 end
 
-function action_status()
+-- 检查OSCam进程状态
+function check_status()
     local sys = require "luci.sys"
-    local status = {
-        running = (sys.call("pgrep oscam >/dev/null") == 0),
-        pcsc_enabled = (luci.model.uci.cursor():get("oscam", "main", "pcsc") or "0") == "1"
-    }
-    luci.http.prepare_content("application/json")
-    luci.http.write_json(status)
+    local http = require "luci.http"
+    
+    local pid = sys.exec("pgrep -f 'oscam -c /etc/oscam'")
+    local is_running = pid ~= "" and pid ~= nil
+    
+    http.prepare_content("application/json")
+    http.write_json({ running = is_running })
 end
