@@ -1,0 +1,131 @@
+<%+header%>
+<div class="cbi-map">
+    <h2 name="content"><%:OSCam 服务状态%></h2>
+    <div class="cbi-section">
+        <div class="cbi-section-node">
+            <% 
+            local uci = require "luci.model.uci".cursor()
+            local status = luci.sys.init.status("oscam")
+            local oscam_version = luci.util.exec("oscam --version 2>/dev/null | head -n1")
+            local config_dir = uci:get("oscam", "main", "config_dir") or "/etc/oscam"
+            %>
+            
+            <!-- 状态显示区域 -->
+            <div class="table" id="status_table">
+                <div class="tr">
+                    <div class="td left" width="33%"><%:服务状态%></div>
+                    <div class="td left">
+                        <% if status then %>
+                            <span style="color: green">▶ <%:运行中%></span>
+                        <% else %>
+                            <span style="color: red">■ <%:已停止%></span>
+                        <% end %>
+                    </div>
+                </div>
+                
+                <div class="tr">
+                    <div class="td left"><%:配置文件目录%></div>
+                    <div class="td left"><%=config_dir%></div>
+                </div>
+                
+                <% if oscam_version and #oscam_version > 0 then %>
+                <div class="tr">
+                    <div class="td left"><%:程序版本%></div>
+                    <div class="td left"><%=oscam_version%></div>
+                </div>
+                <% end %>
+            </div>
+
+            <!-- 操作按钮组 -->
+            <div class="cbi-page-actions" style="margin-top: 2em">
+                <button class="cbi-button cbi-button-apply" onclick="handleAction('start')">
+                    <%:启动服务%>
+                </button>
+                <button class="cbi-button cbi-button-reset" onclick="handleAction('stop')">
+                    <%:停止服务%>
+                </button>
+                <button class="cbi-button cbi-button-reload" onclick="handleAction('restart')">
+                    <%:重启服务%>
+                </button>
+            </div>
+
+            <!-- 实时日志预览 -->
+            <div class="cbi-section" style="margin-top: 2em">
+                <h3><%:实时日志%></h3>
+                <pre id="oscam_logs" style="height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 服务操作处理
+function handleAction(cmd) {
+    var btnText = {
+        start: '<%:正在启动...%>',
+        stop: '<%:正在停止...%>', 
+        restart: '<%:正在重启...%>'
+    }[cmd];
+    
+    showLoading(btnText);
+    
+    fetch('<%=url('admin/services/oscam/action')%>?cmd=' + cmd)
+    .then(response => response.json())
+    .then(data => {
+        if(data.status === 'OK') {
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        }
+    })
+    .catch(err => {
+        hideLoading();
+        alert('<%:操作失败，请检查系统日志%>');
+    });
+}
+
+// 显示加载状态
+function showLoading(text) {
+    var overlay = document.createElement('div');
+    overlay.style = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2em;
+    `;
+    overlay.id = 'loadingOverlay';
+    overlay.innerHTML = text + '...';
+    document.body.appendChild(overlay);
+}
+
+// 隐藏加载状态
+function hideLoading() {
+    var overlay = document.getElementById('loadingOverlay');
+    if(overlay) overlay.remove();
+}
+
+// WebSocket 日志监听
+window.addEventListener('load', function() {
+    var ws = new WebSocket('ws://' + window.location.host + '/oscam-log');
+    var logElement = document.getElementById('oscam_logs');
+    
+    ws.onmessage = function(event) {
+        logElement.innerHTML += event.data + '\n';
+        logElement.scrollTop = logElement.scrollHeight;
+    };
+    
+    ws.onerror = function(err) {
+        logElement.innerHTML += '<%:日志连接失败%>\n';
+    };
+});
+</script>
+
+<%+footer%>
