@@ -1,0 +1,23 @@
+<%+header%>
+<div class="cbi-map">
+    <h2>OSCam Status</h2>
+    <div class="cbi-section">
+        <% local status = luci.sys.init.status("oscam") %>
+        <p>Service Status: <%= status and "<span style='color: green'>Running</span>" or "<span style='color: red'>Stopped</span>" %></p>
+        <button class="cbi-button cbi-button-apply" onclick="service_action('start')">Start</button>
+        <button class="cbi-button cbi-button-reset" onclick="service_action('stop')">Stop</button>
+        <button class="cbi-button cbi-button-reload" onclick="service_action('restart')">Restart</button>
+    </div>
+</div>
+<script>
+function service_action(cmd) {
+    fetch('<%=url('admin/services/oscam/action')%>?cmd=' + cmd)
+    .then(response => response.json())
+    .then(data => {
+        if(data.status === 'OK') {
+            window.location.reload()
+        }
+    })
+}
+</script>
+<%+footer%>
